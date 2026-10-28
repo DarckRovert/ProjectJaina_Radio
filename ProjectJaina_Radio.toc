@@ -1,0 +1,11 @@
+## Interface: 30300
+## Title: |cff00ccffProject Jaina|r Radio (Kirin Tor FM)
+## Notes: Sintonizador de radio in-game y control remoto de streaming 24/7 de Project Jaina.
+## Author: DarckRovert & Claude Mythos 5 (L9)
+## Version: 1.0.0
+## SavedVariablesPerCharacter: ProjectJaina_Radio_DB
+## X-Category: Audio & Radio
+## X-Website: https://darckrovert.github.io/ProjectJaina_Web/radio/
+
+ProjectJaina_Radio.lua
+
