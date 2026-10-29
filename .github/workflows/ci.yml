@@ -1,4 +1,4 @@
-name: ProjectJaina_Radio — CI/CD
+name: ProjectJaina_Radio - CI/CD
 
 on:
   push:
