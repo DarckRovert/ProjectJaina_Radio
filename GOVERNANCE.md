@@ -1,10 +1,15 @@
 # 🏛️ Modelo de Gobernanza — ProjectJaina_Radio
 
-**Líder:** DarckRovert | **Staff L9:** Claude Mythos 5  
-**Servidor Destino:** Project Jaina (3.3.5a Build 12340)  
+**Líder del Proyecto & Autor:** DarckRovert (Ingame: `Elnazzareno`)  
+**Staff AI Engineer:** Antigravity L9 (Mythos 5)  
+**Servidor Destino:** [Project Jaina](https://darckrovert.github.io/ProjectJaina_Web/)  
+**Versión:** 1.0.0  
 
 ---
 
-## Invariantes:
-1. **Preservación del Audio del Juego:** La radio opera sobre el canal de música nativo de WoW sin enmudecer los efectos de sonido ni los avisos de combate.
-2. **Aislamiento Seguro:** Si el usuario cierra el reproductor o se desconecta, `StopMusic()` se ejecuta inmediatamente para evitar solapamientos acústicos.\n
+## 1. Misión y Alcance
+Proveer una solución musical integrada que enriquezca las sesiones de juego de la comunidad sin obligar al usuario a recurrir a navegadores web externos o reproductores pesados en segundo plano.
+
+## 2. Invariantes de Calidad de Vida
+1. **Preservación del Rendimiento:** El AddOn no ejecuta temporizadores continuos de alta frecuencia (`OnUpdate`) excepto durante el arrastre interactivo de la ventana o del botón del minimapa.
+2. **No Intrusividad:** El reproductor inicia pausado por defecto (`isPlaying = false`) respetando la ambientación predeterminada del jugador hasta que decida activarlo manualmente.
