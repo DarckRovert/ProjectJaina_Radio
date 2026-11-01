@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/DarckRovert/ProjectJaina_Web/main/images/project_jaina_official_logo.jpg" alt="Project JAIna Official Crest" width="180">
+</p>
+
 # 📻 ProjectJaina_Radio — Sintonizador Kirin Tor FM In-Game (WoW 3.3.5a)
 ## Radio Streaming 24/7 y Jukebox Clásico Integrado en el Cliente de Juego
 
@@ -69,4 +73,5 @@ La sincronización de títulos de temas y estado de reproducción con el servido
 
 ## ⌨️ 4. Comandos de Consola (Slash Commands)
 
-* `/radio`: Abre o cierra la interfaz del sintonizador Kirin Tor FM.
+* `/radio`: Abre o cierra la interfaz del sintonizador Kirin Tor FM.
+
