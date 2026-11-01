@@ -13,14 +13,14 @@ local ADDON_NAME = "ProjectJaina_Radio"
 local VERSION = "1.0.0"
 local PREFIJO_RADIO = "PJ_RADIO"
 
--- Lista de Emisoras Canónicas
+-- Lista de Emisoras Canónicas (Verificadas en SoundEntries.dbc para WotLK 3.3.5a)
 local EMISORAS = {
-    { id = 1, name = "Taberna de Theramore", genre = "Folk Medieval & Bardo", localTrack = "Sound\\Music\\ZoneMusic\\Dalaran\\DC_Day01.mp3" },
+    { id = 1, name = "Taberna de Theramore", genre = "Folk Medieval & Bardo", localTrack = "Sound\\Music\\ZoneMusic\\TavernHuman\\RA_HumanTavern1A.mp3" },
     { id = 2, name = "Apex Mythic Raider", genre = "Orquestal Épico & Batalla", localTrack = "Sound\\Music\\GlueScreenMusic\\WotLK_main_title.mp3" },
-    { id = 3, name = "Kirin Tor Lofi & Chill", genre = "Lo-Fi Beats & Relax", localTrack = "Sound\\Music\\ZoneMusic\\GrizzlyHills\\GH_Day01.mp3" },
-    { id = 4, name = "Sintetizadores de Gnomeregan", genre = "Synthwave 80s", localTrack = "Sound\\Music\\ZoneMusic\\Ulduar\\Ulduar_GeneralWalk.mp3" },
-    { id = 5, name = "Forja de Hierro Rock & Metal", genre = "Heavy Metal & Hard Rock", localTrack = "Sound\\Music\\ZoneMusic\\Ironforge\\Ironforge.mp3" },
-    { id = 6, name = "Tierras Altas de Arathi", genre = "Naturaleza, Lluvia & RPG", localTrack = "Sound\\Music\\ZoneMusic\\HowlingFjord\\HF_Day01.mp3" },
+    { id = 3, name = "Kirin Tor Lofi & Chill", genre = "Lo-Fi Beats & Relax", localTrack = "Sound\\Music\\ZoneMusic\\GrizzlyHills\\GH_GeneralWalk_A_Day01.mp3" },
+    { id = 4, name = "Sintetizadores de Gnomeregan", genre = "Synthwave 80s", localTrack = "Sound\\Music\\ZoneMusic\\Ulduar\\UL_StoneGeneralWalk01.mp3" },
+    { id = 5, name = "Forja de Hierro Rock & Metal", genre = "Heavy Metal & Hard Rock", localTrack = "Sound\\Music\\ZoneMusic\\DMF_L70ETC01.mp3" },
+    { id = 6, name = "Tierras Altas de Arathi", genre = "Naturaleza, Lluvia & RPG", localTrack = "Sound\\Music\\ZoneMusic\\HowlingFjord\\HF_GeneralWalk_Day01.mp3" },
     { id = 7, name = "Dial Libre Personalizado", genre = "URL Propia de Audio", localTrack = nil }
 }
 
@@ -28,7 +28,7 @@ local EMISORAS = {
 local dbDefaults = {
     station = 1,
     volume = 70,
-    mode = "web", -- "web" (streaming 24/7) o "local" (Jukebox MP3)
+    mode = "local", -- "local" (Jukebox MP3) o "web" (streaming 24/7)
     isPlaying = false,
     framePos = { "CENTER", "UIParent", "CENTER", 0, 100 },
     minimapAngle = 45,
@@ -39,6 +39,32 @@ ProjectJaina_Radio_DB = ProjectJaina_Radio_DB or {}
 
 local mainFrame = nil
 local nowPlayingTitle = "Sintonizando emisora..."
+
+-- Diálogo emergente para copiar URL web de forma nativa en WoW 3.3.5a
+StaticPopupDialogs["PROJECTJAINA_RADIO_URL"] = {
+    text = "Kirin Tor Radio Web:\nPresiona Ctrl+C para copiar el enlace:",
+    button1 = "Cerrar",
+    hasEditBox = true,
+    editBoxWidth = 280,
+    OnShow = function(self)
+        local editBox = _G[self:GetName() .. "EditBox"]
+        if editBox then
+            editBox:SetText("https://darckrovert.github.io/ProjectJaina_Web/radio/")
+            editBox:SetFocus()
+            editBox:HighlightText()
+        end
+    end,
+    EditBoxOnEnterPressed = function(self)
+        self:GetParent():Hide()
+    end,
+    EditBoxOnEscapePressed = function(self)
+        self:GetParent():Hide()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
 
 -- Función auxiliar de impresión en chat
 local function RadioPrint(msg)
@@ -65,6 +91,10 @@ local function PlayCurrentStation()
     if ProjectJaina_Radio_DB.mode == "local" then
         StopMusic()
         if st.localTrack then
+            -- Asegurar que el canal de música nativo de WoW esté habilitado
+            SetCVar("Sound_EnableMusic", "1")
+            local vol = (ProjectJaina_Radio_DB.volume or 70) / 100
+            SetCVar("Sound_MusicVolume", tostring(vol))
             PlayMusic(st.localTrack)
             nowPlayingTitle = st.name .. " (Modo Jukebox Local)"
             RadioPrint("Reproduciendo en Jukebox local: |cFF00FFCC" .. st.name .. "|r")
@@ -72,7 +102,7 @@ local function PlayCurrentStation()
     else
         SendRadioCommand("PLAY", stIndex)
         nowPlayingTitle = st.name .. " (" .. st.genre .. ")"
-        RadioPrint("Sintonizando en streaming web: |cFF00FFCC" .. st.name .. "|r")
+        RadioPrint("Sintonizando en streaming web: |cFF00FFCC" .. st.name .. "|r (Abre el portal web)")
     end
 
     if mainFrame and mainFrame.UpdateUI then
@@ -129,6 +159,9 @@ end
 local function SetVolume(vol)
     vol = math.max(0, math.min(100, tonumber(vol) or 50))
     ProjectJaina_Radio_DB.volume = vol
+    if ProjectJaina_Radio_DB.mode == "local" then
+        SetCVar("Sound_MusicVolume", tostring(vol / 100))
+    end
     SendRadioCommand("VOL", vol)
     RadioPrint("Volumen establecido a: |cFFFFD700" .. vol .. "%|r")
     if mainFrame and mainFrame.UpdateUI then
@@ -196,17 +229,17 @@ local function CreateRadioFrame()
     marqueeText:SetText("|cFFFFFFFF" .. nowPlayingTitle .. "|r")
     mainFrame.marqueeText = marqueeText
 
-    -- Botones de Control (Prev, Play, Next)
+    -- Botones de Control (Prev, Play, Next) con tipografía ASCII 100% compatible
     local btnPrev = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
     btnPrev:SetSize(40, 26)
     btnPrev:SetPoint("TOPLEFT", marqueeBox, "BOTTOMLEFT", 10, -8)
-    btnPrev:SetText("⏮")
+    btnPrev:SetText("<<")
     btnPrev:SetScript("OnClick", function() PrevStation() end)
 
     local btnPlay = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
     btnPlay:SetSize(80, 26)
     btnPlay:SetPoint("LEFT", btnPrev, "RIGHT", 8, 0)
-    btnPlay:SetText(ProjectJaina_Radio_DB.isPlaying and "⏸ Pausa" or "▶ Play")
+    btnPlay:SetText(ProjectJaina_Radio_DB.isPlaying and "|| Pausa" or "> Play")
     btnPlay:SetScript("OnClick", function()
         if ProjectJaina_Radio_DB.isPlaying then
             PauseCurrentStation()
@@ -219,7 +252,7 @@ local function CreateRadioFrame()
     local btnNext = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
     btnNext:SetSize(40, 26)
     btnNext:SetPoint("LEFT", btnPlay, "RIGHT", 8, 0)
-    btnNext:SetText("⏭")
+    btnNext:SetText(">>")
     btnNext:SetScript("OnClick", function() NextStation() end)
 
     -- Botón de Modo (Web vs Local Jukebox)
@@ -228,12 +261,13 @@ local function CreateRadioFrame()
     btnMode:SetPoint("LEFT", btnNext, "RIGHT", 14, 0)
     btnMode:SetText(ProjectJaina_Radio_DB.mode == "web" and "Modo: Web 24/7" or "Modo: Local")
     btnMode:SetScript("OnClick", function()
+        StopMusic()
         if ProjectJaina_Radio_DB.mode == "web" then
             ProjectJaina_Radio_DB.mode = "local"
             RadioPrint("Modo de Radio cambiado a: |cFFFFD700Jukebox Local (Música de WotLK)|r")
         else
             ProjectJaina_Radio_DB.mode = "web"
-            RadioPrint("Modo de Radio cambiado a: |cFF00FFCCStreaming Web 24/7|r")
+            RadioPrint("Modo de Radio cambiado a: |cFF00FFCCStreaming Web 24/7|r (Usa el navegador)")
         end
         if ProjectJaina_Radio_DB.isPlaying then
             PlayCurrentStation()
@@ -262,6 +296,9 @@ local function CreateRadioFrame()
         val = math.floor(val)
         ProjectJaina_Radio_DB.volume = val
         _G[self:GetName() .. "Text"]:SetText("Volumen (" .. val .. "%)")
+        if ProjectJaina_Radio_DB.mode == "local" then
+            SetCVar("Sound_MusicVolume", tostring(val / 100))
+        end
         SendRadioCommand("VOL", val)
     end)
     mainFrame.volSlider = volSlider
@@ -270,14 +307,15 @@ local function CreateRadioFrame()
     local btnPortal = CreateFrame("Button", nil, mainFrame, "UIPanelButtonTemplate")
     btnPortal:SetSize(130, 20)
     btnPortal:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMLEFT", 12, 10)
-    btnPortal:SetText("Abrir Portal Web ↗")
+    btnPortal:SetText("Abrir Portal Web")
     btnPortal:SetScript("OnClick", function()
+        StaticPopup_Show("PROJECTJAINA_RADIO_URL")
         RadioPrint("Abre tu navegador en: |cFF00FFCChttps://darckrovert.github.io/ProjectJaina_Web/radio/|r")
     end)
 
     function mainFrame:UpdateUI()
         local isPlay = ProjectJaina_Radio_DB.isPlaying
-        self.btnPlay:SetText(isPlay and "⏸ Pausa" or "▶ Play")
+        self.btnPlay:SetText(isPlay and "|| Pausa" or "> Play")
         self.btnMode:SetText(ProjectJaina_Radio_DB.mode == "web" and "Modo: Web 24/7" or "Modo: Local")
         local curSt = EMISORAS[ProjectJaina_Radio_DB.station or 1]
         self.stationLabel:SetText("Emisora: |cFF00FFCC" .. curSt.name .. "|r")
