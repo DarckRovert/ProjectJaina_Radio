@@ -355,28 +355,41 @@ local function CreateMinimapButton()
     local function Reposition(angle)
         local rad = math.rad(angle)
         local cos, sin = math.cos(rad), math.sin(rad)
+        btn:ClearAllPoints()
         btn:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 52 - (80 * cos), (80 * sin) - 52)
     end
 
+    local wasDragged = false
+    local function OnDragUpdate(self)
+        local mx, my = Minimap:GetCenter()
+        local cx, cy = GetCursorPosition()
+        local scale = Minimap:GetEffectiveScale()
+        cx, cy = cx / scale, cy / scale
+        local angle = math.deg(math.atan2(cy - my, cx - mx))
+        if angle < 0 then angle = angle + 360 end
+        ProjectJaina_Radio_DB.minimapAngle = angle
+        Reposition(angle)
+        wasDragged = true
+    end
+
+    btn:RegisterForClicks("LeftButtonUp")
     btn:RegisterForDrag("LeftButton")
     btn:SetScript("OnDragStart", function(self)
-        self:SetScript("OnUpdate", function()
-            local mx, my = Minimap:GetCenter()
-            local cx, cy = GetCursorPosition()
-            local scale = UIParent:GetEffectiveScale()
-            cx, cy = cx / scale, cy / scale
-            local angle = math.deg(math.atan2(cy - my, cx - mx))
-            if angle < 0 then angle = angle + 360 end
-            ProjectJaina_Radio_DB.minimapAngle = angle
-            Reposition(angle)
-        end)
+        wasDragged = false
+        self:LockHighlight()
+        self:SetScript("OnUpdate", OnDragUpdate)
     end)
 
     btn:SetScript("OnDragStop", function(self)
+        self:UnlockHighlight()
         self:SetScript("OnUpdate", nil)
     end)
 
     btn:SetScript("OnClick", function()
+        if wasDragged then
+            wasDragged = false
+            return
+        end
         if not mainFrame then CreateRadioFrame() end
         if mainFrame:IsShown() then
             mainFrame:Hide()
@@ -410,6 +423,9 @@ eventFrame:RegisterEvent("CHAT_MSG_ADDON")
 
 eventFrame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
+        if RegisterAddonMessagePrefix then
+            RegisterAddonMessagePrefix(PREFIJO_RADIO)
+        end
         -- Inicializar SavedVariables
         for k, v in pairs(dbDefaults) do
             if ProjectJaina_Radio_DB[k] == nil then
