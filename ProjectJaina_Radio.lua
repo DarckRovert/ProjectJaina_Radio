@@ -82,24 +82,63 @@ local function SendRadioCommand(action, arg)
     end
 end
 
+-- Almacenamiento volátil del estado de audio previo del jugador
+local userAudioBackup = {
+    captured = false,
+    enableMusic = nil,
+    musicVolume = nil
+}
+
+local function BackupUserAudioSettings()
+    if not userAudioBackup.captured then
+        userAudioBackup.enableMusic = GetCVar("Sound_EnableMusic")
+        userAudioBackup.musicVolume = GetCVar("Sound_MusicVolume")
+        userAudioBackup.captured = true
+    end
+end
+
+local function RestoreUserAudioSettings()
+    if userAudioBackup.captured then
+        if userAudioBackup.enableMusic ~= nil then
+            SetCVar("Sound_EnableMusic", userAudioBackup.enableMusic)
+        end
+        if userAudioBackup.musicVolume ~= nil then
+            SetCVar("Sound_MusicVolume", userAudioBackup.musicVolume)
+        end
+        userAudioBackup.captured = false
+    end
+end
+
 -- Control de Reproducción
 local function PlayCurrentStation()
     local stIndex = ProjectJaina_Radio_DB.station or 1
     local st = EMISORAS[stIndex] or EMISORAS[1]
-    ProjectJaina_Radio_DB.isPlaying = true
 
     if ProjectJaina_Radio_DB.mode == "local" then
-        StopMusic()
-        if st.localTrack then
-            -- Asegurar que el canal de música nativo de WoW esté habilitado
-            SetCVar("Sound_EnableMusic", "1")
-            local vol = (ProjectJaina_Radio_DB.volume or 70) / 100
-            SetCVar("Sound_MusicVolume", tostring(vol))
-            PlayMusic(st.localTrack)
-            nowPlayingTitle = st.name .. " (Modo Jukebox Local)"
-            RadioPrint("Reproduciendo en Jukebox local: |cFF00FFCC" .. st.name .. "|r")
+        if not st.localTrack then
+            StopMusic()
+            RestoreUserAudioSettings()
+            ProjectJaina_Radio_DB.isPlaying = false
+            nowPlayingTitle = st.name .. " (Solo Streaming Web)"
+            RadioPrint("|cFFFF5555Aviso:|r La emisora '|cFF00FFCC" .. st.name .. "|r' requiere el modo Streaming Web 24/7.")
+            if mainFrame and mainFrame.UpdateUI then mainFrame:UpdateUI() end
+            return
         end
+
+        StopMusic()
+        BackupUserAudioSettings()
+        SetCVar("Sound_EnableMusic", "1")
+        local vol = (ProjectJaina_Radio_DB.volume or 70) / 100
+        SetCVar("Sound_MusicVolume", tostring(vol))
+        PlayMusic(st.localTrack)
+
+        ProjectJaina_Radio_DB.isPlaying = true
+        nowPlayingTitle = st.name .. " (Modo Jukebox Local)"
+        RadioPrint("Reproduciendo en Jukebox local: |cFF00FFCC" .. st.name .. "|r")
     else
+        StopMusic()
+        RestoreUserAudioSettings()
+        ProjectJaina_Radio_DB.isPlaying = true
         SendRadioCommand("PLAY", stIndex)
         nowPlayingTitle = st.name .. " (" .. st.genre .. ")"
         RadioPrint("Sintonizando en streaming web: |cFF00FFCC" .. st.name .. "|r (Abre el portal web)")
@@ -114,6 +153,7 @@ local function PauseCurrentStation()
     ProjectJaina_Radio_DB.isPlaying = false
     if ProjectJaina_Radio_DB.mode == "local" then
         StopMusic()
+        RestoreUserAudioSettings()
     else
         SendRadioCommand("PAUSE")
     end
@@ -164,6 +204,24 @@ local function SetVolume(vol)
     end
     SendRadioCommand("VOL", vol)
     RadioPrint("Volumen establecido a: |cFFFFD700" .. vol .. "%|r")
+    if mainFrame and mainFrame.UpdateUI then
+        mainFrame:UpdateUI()
+    end
+end
+
+local function ToggleMode()
+    if ProjectJaina_Radio_DB.mode == "web" then
+        ProjectJaina_Radio_DB.mode = "local"
+        RadioPrint("Modo de Radio cambiado a: |cFFFFD700Jukebox Local MP3|r")
+    else
+        StopMusic()
+        RestoreUserAudioSettings()
+        ProjectJaina_Radio_DB.mode = "web"
+        RadioPrint("Modo de Radio cambiado a: |cFF00FFCCStreaming Web 24/7|r (Usa el navegador)")
+    end
+    if ProjectJaina_Radio_DB.isPlaying then
+        PlayCurrentStation()
+    end
     if mainFrame and mainFrame.UpdateUI then
         mainFrame:UpdateUI()
     end
@@ -261,18 +319,7 @@ local function CreateRadioFrame()
     btnMode:SetPoint("LEFT", btnNext, "RIGHT", 14, 0)
     btnMode:SetText(ProjectJaina_Radio_DB.mode == "web" and "Modo: Web 24/7" or "Modo: Local")
     btnMode:SetScript("OnClick", function()
-        StopMusic()
-        if ProjectJaina_Radio_DB.mode == "web" then
-            ProjectJaina_Radio_DB.mode = "local"
-            RadioPrint("Modo de Radio cambiado a: |cFFFFD700Jukebox Local (Música de WotLK)|r")
-        else
-            ProjectJaina_Radio_DB.mode = "web"
-            RadioPrint("Modo de Radio cambiado a: |cFF00FFCCStreaming Web 24/7|r (Usa el navegador)")
-        end
-        if ProjectJaina_Radio_DB.isPlaying then
-            PlayCurrentStation()
-        end
-        mainFrame:UpdateUI()
+        ToggleMode()
     end)
     mainFrame.btnMode = btnMode
 
@@ -323,9 +370,14 @@ local function CreateRadioFrame()
         self.volSlider:SetValue(ProjectJaina_Radio_DB.volume or 70)
     end
 
-    local pos = ProjectJaina_Radio_DB.framePos or dbDefaults.framePos
-    mainFrame:ClearAllPoints()
-    mainFrame:SetPoint(pos[1], UIParent, pos[3], pos[4], pos[5])
+    local pos = ProjectJaina_Radio_DB.framePos
+    if type(pos) == "table" and #pos == 5 then
+        mainFrame:ClearAllPoints()
+        mainFrame:SetPoint(pos[1], UIParent, pos[3], pos[4], pos[5])
+    else
+        mainFrame:ClearAllPoints()
+        mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 100)
+    end
 
     if not ProjectJaina_Radio_DB.shown then
         mainFrame:Hide()
@@ -488,15 +540,7 @@ SlashCmdList["PROJECTJAINA_RADIO"] = function(msg)
         if v then SetVolume(v)
         else RadioPrint("Uso: /radio vol <0-100>") end
     elseif cmd == "mode" or cmd == "modo" then
-        if ProjectJaina_Radio_DB.mode == "web" then
-            ProjectJaina_Radio_DB.mode = "local"
-            RadioPrint("Modo cambiado a Jukebox Local.")
-        else
-            ProjectJaina_Radio_DB.mode = "web"
-            RadioPrint("Modo cambiado a Streaming Web 24/7.")
-        end
-        if ProjectJaina_Radio_DB.isPlaying then PlayCurrentStation() end
-        if mainFrame and mainFrame.UpdateUI then mainFrame:UpdateUI() end
+        ToggleMode()
     elseif cmd == "help" or cmd == "ayuda" then
         RadioPrint("=== Comandos de Kirin Tor Radio ===")
         RadioPrint("/radio - Abre o cierra la interfaz")
