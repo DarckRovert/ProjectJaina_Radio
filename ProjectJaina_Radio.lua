@@ -508,6 +508,18 @@ end)
 ----------------------------------------------------------------------------
 --  Comandos /slash (/radio, /jainaradio)
 ----------------------------------------------------------------------------
+function ProjectJaina_Radio_ToggleUI()
+    if not mainFrame then CreateRadioFrame() end
+    if mainFrame:IsShown() then
+        mainFrame:Hide()
+        ProjectJaina_Radio_DB.shown = false
+    else
+        mainFrame:Show()
+        ProjectJaina_Radio_DB.shown = true
+    end
+end
+_G.ProjectJaina_Radio_ToggleUI = ProjectJaina_Radio_ToggleUI
+
 SLASH_PROJECTJAINA_RADIO1 = "/radio"
 SLASH_PROJECTJAINA_RADIO2 = "/jainaradio"
 SlashCmdList["PROJECTJAINA_RADIO"] = function(msg)
@@ -515,14 +527,7 @@ SlashCmdList["PROJECTJAINA_RADIO"] = function(msg)
     cmd = (cmd or ""):lower()
 
     if cmd == "" then
-        if not mainFrame then CreateRadioFrame() end
-        if mainFrame:IsShown() then
-            mainFrame:Hide()
-            ProjectJaina_Radio_DB.shown = false
-        else
-            mainFrame:Show()
-            ProjectJaina_Radio_DB.shown = true
-        end
+        ProjectJaina_Radio_ToggleUI()
     elseif cmd == "play" then
         PlayCurrentStation()
     elseif cmd == "pause" or cmd == "stop" then
