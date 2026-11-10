@@ -4,6 +4,13 @@ Todos los cambios notables de este proyecto están documentados en este archivo 
 
 ---
 
+## [1.0.1] — 2026-11-10
+### Cuantización de Volumen Anti-Spam y Cola FIFO de Servidor (Hito #341 / Bug #1)
+- **Redondeo Cuantizado & Deduplicación (`ProjectJaina_Radio.lua`):** El deslizador `SetVolume` redondea al entero más cercano y suprime envíos repetidos mediante `lastSentVolume`, evitando tormentas IPC sobre `PJ_RADIO` al arrastrar.
+- **Cola Ordenada en Puente Eluna (`67_KirinTorRadioBridge.lua`):** Sustituido el mapa sobrescrito por una cola FIFO (`pendingRadioCommands`, `MAX_PENDING_COMMANDS = 128`) para no perder comandos consecutivos.
+
+---
+
 ## [1.0.0] — 2026-10-28
 ### Lanzamiento Oficial v1.0.0 — Sintonizador Kirin Tor FM y Jukebox Temático In-Game
 - **Arquitectura de Audio Inmersivo (`ProjectJaina_Radio.lua`):**

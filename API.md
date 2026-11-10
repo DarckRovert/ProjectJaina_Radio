@@ -1,8 +1,8 @@
 # 📡 Especificación de API y Protocolo — ProjectJaina_Radio
 
 **Prefijo de Red:** `PJ_RADIO`  
-**Backend:** `67_KirinTorRadioBridge.lua` (Eluna Engine)  
-**Versión:** 1.0.0  
+**Backend:** `67_KirinTorRadioBridge.lua` (Eluna Engine, cola FIFO ordenada `MAX_PENDING_COMMANDS = 128`)  
+**Versión:** 1.0.1  
 **Transporte:** `SendAddonMessage` / `CHAT_MSG_ADDON` (Canal: `WHISPER` local / Servidor)  
 
 ---

@@ -39,6 +39,7 @@ ProjectJaina_Radio_DB = ProjectJaina_Radio_DB or {}
 
 local mainFrame = nil
 local nowPlayingTitle = "Sintonizando emisora..."
+local lastSentVolume = nil
 
 -- Diálogo emergente para copiar URL web de forma nativa en WoW 3.3.5a
 StaticPopupDialogs["PROJECTJAINA_RADIO_URL"] = {
@@ -197,12 +198,15 @@ local function PrevStation()
 end
 
 local function SetVolume(vol)
-    vol = math.max(0, math.min(100, tonumber(vol) or 50))
+    vol = math.max(0, math.min(100, math.floor((tonumber(vol) or 50) + 0.5)))
     ProjectJaina_Radio_DB.volume = vol
     if ProjectJaina_Radio_DB.mode == "local" then
         SetCVar("Sound_MusicVolume", tostring(vol / 100))
     end
-    SendRadioCommand("VOL", vol)
+    if vol ~= lastSentVolume then
+        lastSentVolume = vol
+        SendRadioCommand("VOL", vol)
+    end
     RadioPrint("Volumen establecido a: |cFFFFD700" .. vol .. "%|r")
     if mainFrame and mainFrame.UpdateUI then
         mainFrame:UpdateUI()
@@ -334,19 +338,24 @@ local function CreateRadioFrame()
     volSlider:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -20, -108)
     volSlider:SetWidth(130)
     volSlider:SetMinMaxValues(0, 100)
-    volSlider:SetValue(ProjectJaina_Radio_DB.volume or 70)
+    local initialVol = ProjectJaina_Radio_DB.volume or 70
+    lastSentVolume = initialVol
+    volSlider:SetValue(initialVol)
     volSlider:SetValueStep(5)
     _G[volSlider:GetName() .. "Low"]:SetText("0%")
     _G[volSlider:GetName() .. "High"]:SetText("100%")
-    _G[volSlider:GetName() .. "Text"]:SetText("Volumen (" .. (ProjectJaina_Radio_DB.volume or 70) .. "%)")
+    _G[volSlider:GetName() .. "Text"]:SetText("Volumen (" .. initialVol .. "%)")
     volSlider:SetScript("OnValueChanged", function(self, val)
-        val = math.floor(val)
+        val = math.floor(val + 0.5)
         ProjectJaina_Radio_DB.volume = val
         _G[self:GetName() .. "Text"]:SetText("Volumen (" .. val .. "%)")
         if ProjectJaina_Radio_DB.mode == "local" then
             SetCVar("Sound_MusicVolume", tostring(val / 100))
         end
-        SendRadioCommand("VOL", val)
+        if not self._suppressSync and val ~= lastSentVolume then
+            lastSentVolume = val
+            SendRadioCommand("VOL", val)
+        end
     end)
     mainFrame.volSlider = volSlider
 
@@ -367,7 +376,11 @@ local function CreateRadioFrame()
         local curSt = EMISORAS[ProjectJaina_Radio_DB.station or 1]
         self.stationLabel:SetText("Emisora: |cFF00FFCC" .. curSt.name .. "|r")
         self.marqueeText:SetText("|cFFFFFFFF" .. nowPlayingTitle .. "|r")
-        self.volSlider:SetValue(ProjectJaina_Radio_DB.volume or 70)
+        local targetVol = ProjectJaina_Radio_DB.volume or 70
+        lastSentVolume = targetVol
+        self.volSlider._suppressSync = true
+        self.volSlider:SetValue(targetVol)
+        self.volSlider._suppressSync = false
     end
 
     local pos = ProjectJaina_Radio_DB.framePos
