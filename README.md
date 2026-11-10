@@ -14,7 +14,7 @@
 **AddOn:** `ProjectJaina_Radio`  
 **Cliente:** World of Warcraft: Wrath of the Lich King (3.3.5a, Build 12340)  
 **Estándar:** Staff Software Engineer L9 (Claude Mythos 5)  
-**Versión:** 1.0.0  
+**Versión:** 1.0.1  
 
 ---
 
