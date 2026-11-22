@@ -330,7 +330,8 @@ local function CreateRadioFrame()
     -- Selector de Emisora y Etiqueta
     local stationLabel = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     stationLabel:SetPoint("TOPLEFT", btnPrev, "BOTTOMLEFT", 0, -12)
-    stationLabel:SetText("Emisora: |cFF00FFCC" .. (EMISORAS[ProjectJaina_Radio_DB.station or 1].name) .. "|r")
+    local initStation = EMISORAS[ProjectJaina_Radio_DB.station or 1] or EMISORAS[1]
+    stationLabel:SetText("Emisora: |cFF00FFCC" .. initStation.name .. "|r")
     mainFrame.stationLabel = stationLabel
 
     -- Slider de Volumen
@@ -373,7 +374,7 @@ local function CreateRadioFrame()
         local isPlay = ProjectJaina_Radio_DB.isPlaying
         self.btnPlay:SetText(isPlay and "|| Pausa" or "> Play")
         self.btnMode:SetText(ProjectJaina_Radio_DB.mode == "web" and "Modo: Web 24/7" or "Modo: Local")
-        local curSt = EMISORAS[ProjectJaina_Radio_DB.station or 1]
+        local curSt = EMISORAS[ProjectJaina_Radio_DB.station or 1] or EMISORAS[1]
         self.stationLabel:SetText("Emisora: |cFF00FFCC" .. curSt.name .. "|r")
         self.marqueeText:SetText("|cFFFFFFFF" .. nowPlayingTitle .. "|r")
         local targetVol = ProjectJaina_Radio_DB.volume or 70
@@ -466,10 +467,11 @@ local function CreateMinimapButton()
     end)
 
     btn:SetScript("OnEnter", function(self)
+        local curSt = EMISORAS[ProjectJaina_Radio_DB.station or 1] or EMISORAS[1]
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:ClearLines()
         GameTooltip:AddLine("|cFFD4AF37Project Jaina Radio|r", 1, 1, 1)
-        GameTooltip:AddLine("Emisora: |cFF00CCFF" .. (EMISORAS[ProjectJaina_Radio_DB.station or 1].name) .. "|r", 0.9, 0.9, 0.9)
+        GameTooltip:AddLine("Emisora: |cFF00CCFF" .. curSt.name .. "|r", 0.9, 0.9, 0.9)
         GameTooltip:AddLine("Estado: |cFFFFFF00" .. (ProjectJaina_Radio_DB.isPlaying and "En Reproducción" or "Pausado") .. "|r", 0.8, 0.8, 0.8)
         GameTooltip:AddLine("|cFF808080Click para abrir o cerrar sintonizador.|r", 0.6, 0.6, 0.6)
         GameTooltip:Show()
@@ -496,6 +498,9 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4)
             if ProjectJaina_Radio_DB[k] == nil then
                 ProjectJaina_Radio_DB[k] = v
             end
+        end
+        if type(ProjectJaina_Radio_DB.station) ~= "number" or not EMISORAS[ProjectJaina_Radio_DB.station] then
+            ProjectJaina_Radio_DB.station = 1
         end
 
         CreateRadioFrame()

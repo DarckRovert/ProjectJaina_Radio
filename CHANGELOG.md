@@ -4,6 +4,14 @@ Todos los cambios notables de este proyecto están documentados en este archivo 
 
 ---
 
+## [1.0.2] — 2026-11-22
+### Blindaje Anti-Nil de Índice de Emisora en SavedVariables (Hito #386)
+- **Estabilidad de Índice (`ProjectJaina_Radio.lua`):**
+  - Aplicado clamp y validación de rango a `ProjectJaina_Radio_DB.station` durante `ADDON_LOADED`.
+  - Protegidas las indexaciones sobre `EMISORAS[ProjectJaina_Radio_DB.station or 1]` con fallback explícito `or EMISORAS[1]`, erradicando fallos ante perfiles corruptos o emisoras retiradas.
+
+---
+
 ## [1.0.1] — 2026-11-10
 ### Cuantización de Volumen Anti-Spam y Cola FIFO de Servidor (Hito #341 / Bug #1)
 - **Redondeo Cuantizado & Deduplicación (`ProjectJaina_Radio.lua`):** El deslizador `SetVolume` redondea al entero más cercano y suprime envíos repetidos mediante `lastSentVolume`, evitando tormentas IPC sobre `PJ_RADIO` al arrastrar.
