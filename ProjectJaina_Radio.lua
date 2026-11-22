@@ -10,7 +10,7 @@
 ]]
 
 local ADDON_NAME = "ProjectJaina_Radio"
-local VERSION = "1.0.0"
+local VERSION = "1.0.2"
 local PREFIJO_RADIO = "PJ_RADIO"
 
 -- Lista de Emisoras Canónicas (Verificadas en SoundEntries.dbc para WotLK 3.3.5a)
